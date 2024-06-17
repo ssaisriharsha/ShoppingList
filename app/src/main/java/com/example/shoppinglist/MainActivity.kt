@@ -24,6 +24,7 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.AddCircle
+import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
@@ -101,7 +102,7 @@ fun ShoppingList() {
 //                    OutlinedTextField(value = "$item", onValueChange = {}, readOnly = true)
 //                    //Spacer(modifier = Modifier.width(128.dp))
 //                }
-                ShoppingListItem(item = item, onEditClick = { /*TODO*/ }, onDeleteClick = {})
+                ShoppingListItem(item = item, onEditClick = { /*TODO*/ }, onDeleteClick = {sItems.remove(item)})
                 Spacer(Modifier.height(16.dp))
             }
         }
@@ -190,6 +191,10 @@ fun ShoppingListItem(
     onEditClick: () -> Unit,
     onDeleteClick: () -> Unit,
 ) {
+    var itemState by remember {mutableStateOf(false)}
+    var itemName by remember {mutableStateOf(item.name)}
+    var itemQuantity by remember {mutableStateOf(item.quantity.toString())}
+    val context  = LocalContext.current
     Row(modifier = Modifier
         .padding(start = 8.dp, end = 8.dp)
         .fillMaxWidth()
@@ -204,7 +209,7 @@ fun ShoppingListItem(
             Text(text = "Item Name", modifier = Modifier.padding(start = 8.dp, end = 8.dp, top = 3.dp, bottom = 3.dp))
             Text(text = item.name, modifier = Modifier
                 .padding(start = 8.dp, end = 8.dp, top = 3.dp, bottom = 3.dp)
-                .width(64.dp), maxLines = 1, overflow = TextOverflow.Ellipsis)
+                .width(64.dp), maxLines = 1, overflow = TextOverflow.Ellipsis, textAlign = TextAlign.Center)
         }
         Divider(modifier = Modifier
             .height(32.dp)
@@ -217,7 +222,7 @@ fun ShoppingListItem(
         Divider(modifier = Modifier
             .height(32.dp)
             .width(1.dp), thickness = 1.dp)
-        TextButton(onClick = onEditClick) {
+        TextButton(onClick = {itemState = true}) {
             Icon(imageVector = Icons.Default.Edit, contentDescription = "Edit item")
         }
         Divider(modifier = Modifier
@@ -226,6 +231,52 @@ fun ShoppingListItem(
         TextButton(onClick = onDeleteClick) {
             Icon(imageVector = Icons.Default.Delete, contentDescription = "Delete item")
         }
+    }
+    if (itemState) {
+        AlertDialog(
+            onDismissRequest = {
+                itemState = false
+            },
+            confirmButton = {
+                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                    TextButton(onClick = {itemState = !itemState}) {
+                        Icon(imageVector = Icons.Default.Close, contentDescription = "Cancel")
+                        Text(text = "Cancel")
+                    }
+                    TextButton(onClick = {
+                        try {
+                            if (itemName.isNotBlank() && itemQuantity.toInt() >= 0) {
+                                item.name = itemName
+                                item.quantity = itemQuantity.toInt()
+                                itemState = !itemState
+                            }
+                        } catch (e: NumberFormatException) {
+                            Toast.makeText(
+                                context,
+                                "Quantity shouldn't be empty.",
+                                Toast.LENGTH_SHORT
+                            ).show()
+                        }
+                    }) {
+                        Icon(imageVector = Icons.Default.Check, contentDescription = "Done")
+                        Text(text = "Done")
+                    }
+                }
+            },
+            icon = {
+                Icon(imageVector = Icons.Default.ShoppingCart, contentDescription = "Cart")
+            },
+            title = {
+                Text(text = "Edit item")
+            },
+            text = {
+                Column (modifier = Modifier.fillMaxWidth()) {
+                    OutlinedTextField(value = itemName, onValueChange = {itemName = it}, label = {Text(text = "Item Name*")}, keyboardOptions = KeyboardOptions(autoCorrect = false, keyboardType = KeyboardType.Email))
+                    Spacer(Modifier.height(16.dp))
+                    OutlinedTextField(value = itemQuantity, onValueChange = {itemQuantity = it}, label = {Text(text = "Quantity*")}, keyboardOptions = KeyboardOptions(autoCorrect = false, keyboardType = KeyboardType.Number))
+                }
+            }
+        )
     }
 }
 
